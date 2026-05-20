@@ -1,0 +1,18 @@
+{
+  "_comment": "Add this block to your Claude Desktop config at:",
+  "_windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
+  "_mac": "~/Library/Application Support/Claude/claude_desktop_config.json",
+
+  "mcpServers": {
+    "linkedin-autopost": {
+      "command": "node",
+      "args": ["F:\\auto-post\\mcp-server\\dist\\index.js"],
+      "env": {
+        "DEEPSEEK_API_KEY": "your_deepseek_key",
+        "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME": "your_cloud_name",
+        "CLOUDINARY_API_KEY": "your_cloudinary_key",
+        "CLOUDINARY_API_SECRET": "your_cloudinary_secret"
+      }
+    }
+  }
+}

@@ -24,6 +24,14 @@ const nextConfig = {
       source: "/(.*)",
       headers: securityHeaders,
     },
+    {
+      // On sign-out, instruct the browser to wipe cookies, storage, and cache
+      // for this origin — the nuclear privacy option
+      source: "/api/auth/signout",
+      headers: [
+        { key: "Clear-Site-Data", value: '"cookies", "storage", "cache"' },
+      ],
+    },
   ],
 
   images: {

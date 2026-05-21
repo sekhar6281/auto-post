@@ -1,8 +1,9 @@
-import { signOut, auth } from "@/lib/auth";
-import { LinkedInIcon } from "@/components/icons/LinkedInIcon";
+import { auth } from "@/lib/auth";
+import { SignOutButton } from "@/components/SignOutButton";
+import { LinkedInIcon }  from "@/components/icons/LinkedInIcon";
 import Image from "next/image";
-import Link from "next/link";
-import { AlertTriangle, LogOut } from "lucide-react";
+import Link  from "next/link";
+import { AlertTriangle } from "lucide-react";
 import type { User } from "next-auth";
 
 interface NavbarProps { user?: User }
@@ -16,12 +17,11 @@ export async function Navbar({ user }: NavbarProps) {
       {tokenExpired && (
         <div className="bg-amber-500 px-6 py-3.5 flex items-center justify-center gap-2 text-xl text-white font-medium">
           <AlertTriangle className="w-5 h-5 shrink-0" />
-          Session expired —
-          <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
-            <button className="underline underline-offset-2 font-semibold hover:opacity-80">
-              sign in again
-            </button>
-          </form>
+          Session expired —&nbsp;
+          <SignOutButton
+            variant="link"
+            className="underline underline-offset-2 font-semibold hover:opacity-80"
+          />
         </div>
       )}
 
@@ -39,9 +39,9 @@ export async function Navbar({ user }: NavbarProps) {
           {/* Nav links */}
           <div className="hidden sm:flex items-center gap-1">
             {[
-              { href: "/upload",   label: "Upload"  },
-              { href: "/caption",  label: "Caption" },
-              { href: "/preview",  label: "Preview" },
+              { href: "/upload",  label: "Upload"  },
+              { href: "/caption", label: "Caption" },
+              { href: "/preview", label: "Preview" },
             ].map(({ href, label }) => (
               <Link
                 key={href}
@@ -53,7 +53,7 @@ export async function Navbar({ user }: NavbarProps) {
             ))}
           </div>
 
-          {/* User */}
+          {/* User + sign-out */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               {user?.image ? (
@@ -74,15 +74,8 @@ export async function Navbar({ user }: NavbarProps) {
               </span>
             </div>
 
-            <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
-              <button
-                type="submit"
-                title="Sign out"
-                className="p-2.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </form>
+            {/* Client-side sign-out: clears localStorage + sessionStorage + caches */}
+            <SignOutButton />
           </div>
         </div>
       </nav>

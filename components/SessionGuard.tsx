@@ -19,7 +19,9 @@ export function SessionGuard() {
     if (!rememberMe) {
       const active = sessionStorage.getItem("sessionActive");
       if (!active) {
-        // Tab was closed and reopened — sign out to protect the account
+        // Tab was closed and reopened — wipe all local data and sign out
+        try { localStorage.clear();   } catch {}
+        try { sessionStorage.clear(); } catch {}
         signOut({ callbackUrl: "/login" });
         return;
       }

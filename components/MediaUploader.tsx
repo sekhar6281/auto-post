@@ -41,18 +41,15 @@ export function MediaUploader({ onUploadComplete }: Props) {
     try {
       const sig  = await fetch("/api/upload");
       if (!sig.ok) throw new Error("Signature error");
-      const { signature, timestamp, folder, cloudName, apiKey, allowedFormats, maxBytes } = await sig.json();
+      const { signature, timestamp, folder, cloudName, apiKey } = await sig.json();
       const rt   = isVid(file) ? "video" : "image";
       const fd   = new FormData();
-      fd.append("file",            file);
-      fd.append("api_key",         apiKey);
-      fd.append("timestamp",       String(timestamp));
-      fd.append("signature",       signature);
-      fd.append("folder",          folder);
-      fd.append("resource_type",   rt);
-      // These must be sent so Cloudinary can verify the signature (they are part of the signed params)
-      if (allowedFormats) fd.append("allowed_formats", allowedFormats);
-      if (maxBytes)       fd.append("max_bytes",       String(maxBytes));
+      fd.append("file",          file);
+      fd.append("api_key",       apiKey);
+      fd.append("timestamp",     String(timestamp));
+      fd.append("signature",     signature);
+      fd.append("folder",        folder);
+      fd.append("resource_type", rt);
 
       await new Promise<void>((res, rej) => {
         const xhr = new XMLHttpRequest();

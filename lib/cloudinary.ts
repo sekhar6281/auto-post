@@ -18,32 +18,14 @@ export type CloudinaryResource = {
   duration?:     number;
 };
 
-// Allowed file extensions — enforced server-side by Cloudinary (cannot be bypassed client-side)
-const ALLOWED_IMAGE_FORMATS = "jpg,jpeg,png,gif,webp,avif";
-const ALLOWED_VIDEO_FORMATS = "mp4,mov,webm,avi,mkv";
-const ALLOWED_FORMATS       = `${ALLOWED_IMAGE_FORMATS},${ALLOWED_VIDEO_FORMATS}`;
-
-// 100 MB max upload size — enforced by Cloudinary when the signed params are verified
-const MAX_BYTES = 100 * 1024 * 1024; // 100 MB
-
 /**
  * Generates a short-lived signed upload token for the browser.
  * The API *secret* never leaves the server.
- * The signature includes format and size restrictions so Cloudinary
- * rejects any upload that violates them, even if the client tampers
- * with the request.
+ * File-type and size validation is enforced client-side in MediaUploader.tsx.
  */
 export function generateUploadSignature(folder = "linkedin-posts") {
   const timestamp = Math.round(Date.now() / 1000);
-
-  // All params included here are enforced by the signature —
-  // Cloudinary will reject uploads that don't match these exactly.
-  const params = {
-    folder,
-    timestamp,
-    allowed_formats: ALLOWED_FORMATS,
-    max_bytes:       MAX_BYTES,
-  };
+  const params    = { folder, timestamp };
 
   const signature = cloudinary.utils.api_sign_request(
     params,
@@ -54,10 +36,8 @@ export function generateUploadSignature(folder = "linkedin-posts") {
     signature,
     timestamp,
     folder,
-    allowedFormats: ALLOWED_FORMATS,
-    maxBytes:       MAX_BYTES,
-    cloudName:      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!,
-    apiKey:         process.env.CLOUDINARY_API_KEY!,
+    cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!,
+    apiKey:    process.env.CLOUDINARY_API_KEY!,
   };
 }
 

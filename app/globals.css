@@ -12,8 +12,8 @@
 
   * { box-sizing: border-box; }
 
-  /* Base font 22px so all rem units scale up site-wide */
-  html { font-size: 22px; }
+  /* Standard 16px base — looks correct at 100% zoom on all screens */
+  html { font-size: 16px; }
 
   body {
     @apply bg-slate-50 text-slate-900 font-sans antialiased;

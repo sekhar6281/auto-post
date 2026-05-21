@@ -109,19 +109,22 @@ export function CaptionEditor({ mediaUrl, mediaType, mediaItems, onDeleteMedia, 
           Official Summit / Event URL
           <span className="ml-2 text-sm font-normal text-slate-400">paste the event website link</span>
         </label>
-        <div className="relative">
-          <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+        <div className={cn(
+          "flex items-center gap-3 px-4 rounded-xl border bg-white transition-all duration-150",
+          "focus-within:ring-2",
+          summitUrl && !isValidUrl(summitUrl)
+            ? "border-red-300 focus-within:ring-red-200/60 focus-within:border-red-400"
+            : "border-slate-200 hover:border-slate-300 focus-within:ring-linkedin-500/20 focus-within:border-linkedin-400"
+        )}>
+          <Link2 className="w-5 h-5 text-slate-400 shrink-0" />
           <input
             value={summitUrl}
             onChange={e => { setSummitUrl(e.target.value); setUrlOk(null); }}
             placeholder="https://your-event-website.com"
-            className={cn(
-              "input-base pl-12 pr-12",
-              summitUrl && !isValidUrl(summitUrl) && "border-red-300 focus:border-red-400 focus:ring-red-200"
-            )}
+            className="flex-1 py-4 bg-transparent focus:outline-none text-lg text-slate-800 placeholder:text-slate-400 min-w-0"
           />
           {summitUrl && isValidUrl(summitUrl) && (
-            <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           )}
         </div>
         {summitUrl && isValidUrl(summitUrl) && (

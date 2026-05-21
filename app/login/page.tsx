@@ -205,7 +205,17 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-center text-base text-slate-400 mt-6 leading-relaxed">
+          {/* Privacy note about credentials */}
+          <div className="mt-5 flex items-start gap-3 bg-white border border-slate-100 rounded-xl px-5 py-4 shadow-sm">
+            <Lock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-slate-500 leading-relaxed">
+              <span className="font-semibold text-slate-600">Your email & password never touch this site.</span>{" "}
+              You log in directly on LinkedIn&apos;s secure servers — we only receive a temporary access token.
+              For extra privacy on shared computers, use your browser&apos;s <span className="font-medium">Incognito / Private</span> mode so the browser saves nothing.
+            </p>
+          </div>
+
+          <p className="text-center text-base text-slate-400 mt-5 leading-relaxed">
             By signing in you allow AutoPost AI to post on your behalf.<br />
             Revoke access anytime from LinkedIn Settings → Security.
           </p>

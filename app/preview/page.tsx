@@ -22,7 +22,7 @@ export default function PreviewPage() {
   const [postUrl,    setPostUrl]    = useState("");
   const [errorMsg,   setError]      = useState("");
   const [autoSigningOut, setAutoSigningOut] = useState(false);
-  const [countdown,  setCountdown]  = useState(3);
+  const [countdown,  setCountdown]  = useState(5);
 
   useEffect(() => {
     const rm = sessionStorage.getItem("uploadedMedia");
@@ -54,7 +54,7 @@ export default function PreviewPage() {
       // Auto sign-out if requested at login
       if (localStorage.getItem("autoLogoutAfterPost") === "true") {
         setAutoSigningOut(true);
-        let secs = 3;
+        let secs = 5;
         const interval = setInterval(() => {
           secs -= 1;
           setCountdown(secs);

@@ -5,6 +5,18 @@ import LinkedIn from "next-auth/providers/linkedin";
 export const authConfig: NextAuthConfig = {
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   trustHost: true,
+
+  // Harden session cookie — HttpOnly prevents JS access, Strict sameSite blocks CSRF
+  cookies: {
+    sessionToken: {
+      options: {
+        httpOnly: true,
+        sameSite: "lax" as const,
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   providers: [
     LinkedIn({
       clientId:     process.env.LINKEDIN_CLIENT_ID!,

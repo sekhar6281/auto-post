@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Failed to post to LinkedIn.";
-    console.error("[post]", message);
+    console.error("[post] LinkedIn error:", message.replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]"));
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

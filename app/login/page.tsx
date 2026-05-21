@@ -1,29 +1,42 @@
-import { signIn } from "@/lib/auth";
+"use client";
+
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { LinkedInIcon } from "@/components/icons/LinkedInIcon";
-import { Sparkles, ImagePlus, Send, Shield } from "lucide-react";
+import { Sparkles, ImagePlus, Send, Shield, Lock, LogOut, Save } from "lucide-react";
 
 const FEATURES = [
-  { icon: ImagePlus, text: "Upload photos & videos" },
-  { icon: Sparkles,  text: "AI-generated captions" },
-  { icon: Send,      text: "Auto-post to LinkedIn"  },
-  { icon: Shield,    text: "Secure OAuth — no password stored" },
+  { icon: ImagePlus, text: "Upload photos & videos"             },
+  { icon: Sparkles,  text: "AI-generated captions"              },
+  { icon: Send,      text: "Auto-post to LinkedIn"               },
+  { icon: Shield,    text: "Secure OAuth — no password stored"  },
 ];
 
 export default function LoginPage() {
+  const [rememberMe,  setRememberMe]  = useState(true);
+  const [autoLogout,  setAutoLogout]  = useState(false);
+  const [loading,     setLoading]     = useState(false);
+
+  const handleSignIn = () => {
+    setLoading(true);
+    // Persist preferences before the OAuth redirect
+    localStorage.setItem("rememberMe",          String(rememberMe));
+    localStorage.setItem("autoLogoutAfterPost", String(autoLogout));
+    // If not remembering, clear any stale session marker so SessionGuard kicks in
+    if (!rememberMe) sessionStorage.removeItem("sessionActive");
+    signIn("linkedin", { callbackUrl: "/dashboard" });
+  };
+
   return (
     <div className="min-h-screen flex">
 
-      {/* ── Left panel (brand) ──────────────────────── */}
+      {/* ── Left brand panel ─────────────────────────────── */}
       <div className="hidden lg:flex lg:w-1/2 gradient-brand relative overflow-hidden flex-col justify-between p-14">
-        {/* Grid overlay */}
         <div className="absolute inset-0 bg-grid-white opacity-100" />
-
-        {/* Glow orbs */}
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
 
         <div className="relative z-10">
-          {/* Logo */}
           <div className="flex items-center gap-4 mb-16">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/30">
               <LinkedInIcon className="w-6 h-6 text-white" />
@@ -31,7 +44,6 @@ export default function LoginPage() {
             <span className="text-white font-bold text-2xl tracking-tight">AutoPost AI</span>
           </div>
 
-          {/* Headline */}
           <h1 className="text-5xl font-bold text-white leading-tight mb-5">
             Turn moments into<br />
             <span className="text-blue-200">LinkedIn influence</span>
@@ -40,7 +52,6 @@ export default function LoginPage() {
             Upload media, get an AI-crafted caption, and publish to your LinkedIn profile in under 60 seconds.
           </p>
 
-          {/* Features */}
           <div className="space-y-5">
             {FEATURES.map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-4">
@@ -53,15 +64,15 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom quote */}
         <div className="relative z-10 border-t border-white/20 pt-8">
-          <p className="text-blue-100 text-lg italic">
-            &ldquo;Post consistently. Grow authentically.&rdquo;
-          </p>
+          <div className="flex items-center gap-2 text-blue-100 text-base">
+            <Lock className="w-4 h-4 shrink-0" />
+            Your data stays on your device. We never store your LinkedIn credentials or personal information on our servers.
+          </div>
         </div>
       </div>
 
-      {/* ── Right panel (login) ─────────────────────── */}
+      {/* ── Right login panel ────────────────────────────── */}
       <div className="flex-1 flex items-center justify-center p-8 lg:p-14 bg-slate-50">
         <div className="w-full max-w-lg animate-slide-up">
 
@@ -73,35 +84,107 @@ export default function LoginPage() {
             <span className="font-bold text-slate-900 text-xl">AutoPost AI</span>
           </div>
 
-          {/* Card */}
           <div className="card p-10">
-            <div className="mb-10">
-              <h2 className="text-3xl font-bold text-slate-900 mb-3">
-                Welcome back 👋
-              </h2>
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-slate-900 mb-3">Welcome back 👋</h2>
               <p className="text-slate-500 text-lg leading-relaxed">
-                Sign in with your LinkedIn account to start creating and publishing posts with AI.
+                Sign in with your LinkedIn account to create and publish AI-powered posts.
               </p>
             </div>
 
-            {/* LinkedIn sign-in button */}
-            <form
-              action={async () => {
-                "use server";
-                await signIn("linkedin", { redirectTo: "/dashboard" });
-              }}
+            {/* ── Security preferences ─────────────────── */}
+            <div className="bg-slate-50 rounded-xl border border-slate-100 p-5 mb-6 space-y-4">
+              <p className="text-base font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <Shield className="w-4 h-4" /> Security preferences
+              </p>
+
+              {/* Remember me */}
+              <label className="flex items-start gap-3.5 cursor-pointer group">
+                <div className="relative mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                    rememberMe
+                      ? "bg-linkedin-500 border-linkedin-500"
+                      : "border-slate-300 bg-white group-hover:border-slate-400"
+                  }`}>
+                    {rememberMe && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Save className="w-4 h-4 text-slate-500" />
+                    <p className="text-base font-semibold text-slate-700">Save login info</p>
+                  </div>
+                  <p className="text-sm text-slate-400 mt-0.5">
+                    Stay signed in for 30 days. Uncheck on shared or public devices.
+                  </p>
+                </div>
+              </label>
+
+              {/* Auto-logout after post */}
+              <label className="flex items-start gap-3.5 cursor-pointer group">
+                <div className="relative mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={autoLogout}
+                    onChange={e => setAutoLogout(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                    autoLogout
+                      ? "bg-linkedin-500 border-linkedin-500"
+                      : "border-slate-300 bg-white group-hover:border-slate-400"
+                  }`}>
+                    {autoLogout && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <LogOut className="w-4 h-4 text-slate-500" />
+                    <p className="text-base font-semibold text-slate-700">Auto sign-out after posting</p>
+                  </div>
+                  <p className="text-sm text-slate-400 mt-0.5">
+                    Automatically log out once your post is published. Recommended for shared devices.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* Sign-in button */}
+            <button
+              onClick={handleSignIn}
+              disabled={loading}
+              className="btn-primary w-full shine disabled:opacity-70"
             >
-              <button
-                type="submit"
-                className="btn-primary w-full shine"
-              >
-                <LinkedInIcon className="w-6 h-6" />
-                Continue with LinkedIn
-              </button>
-            </form>
+              {loading
+                ? <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Redirecting to LinkedIn…
+                  </span>
+                : <span className="flex items-center justify-center gap-2">
+                    <LinkedInIcon className="w-6 h-6" />
+                    Continue with LinkedIn
+                  </span>}
+            </button>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 my-8">
+            <div className="flex items-center gap-3 my-7">
               <div className="flex-1 h-px bg-slate-100" />
               <span className="text-base text-slate-400 font-medium">SECURE LOGIN</span>
               <div className="flex-1 h-px bg-slate-100" />
@@ -110,10 +193,10 @@ export default function LoginPage() {
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: "OAuth 2.0",    sub: "Secure" },
-                { label: "No Password", sub: "Stored" },
+                { label: "OAuth 2.0",    sub: "Secure"  },
+                { label: "No Password",  sub: "Stored"  },
                 { label: "Revoke",       sub: "Anytime" },
-              ].map((b) => (
+              ].map(b => (
                 <div key={b.label} className="text-center py-4 px-3 bg-slate-50 rounded-xl border border-slate-100">
                   <p className="text-base font-semibold text-slate-700">{b.label}</p>
                   <p className="text-sm text-slate-400 mt-1">{b.sub}</p>
@@ -124,7 +207,7 @@ export default function LoginPage() {
 
           <p className="text-center text-base text-slate-400 mt-6 leading-relaxed">
             By signing in you allow AutoPost AI to post on your behalf.<br />
-            Revoke access anytime from LinkedIn Settings.
+            Revoke access anytime from LinkedIn Settings → Security.
           </p>
         </div>
       </div>

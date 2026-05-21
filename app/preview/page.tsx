@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { PostPreview } from "@/components/PostPreview";
 import { ArrowLeft, Send, Loader2, CheckCircle2, ExternalLink, RotateCcw, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -38,6 +38,14 @@ export default function PreviewPage() {
       setPostUrl(data.postUrl); setStatus("success");
       toast.success("Posted to LinkedIn! 🎉");
       sessionStorage.removeItem("uploadedMedia"); sessionStorage.removeItem("generatedCaption");
+
+      // Auto sign-out if the user requested it at login
+      if (localStorage.getItem("autoLogoutAfterPost") === "true") {
+        localStorage.removeItem("autoLogoutAfterPost");
+        localStorage.removeItem("rememberMe");
+        sessionStorage.clear();
+        setTimeout(() => signOut({ callbackUrl: "/login" }), 3000);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setStatus("error"); setError(msg); toast.error(msg);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
+import { SessionGuard }    from "@/components/SessionGuard";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
@@ -16,7 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <SessionGuard />
+          {children}
+        </SessionProvider>
         <Toaster
           position="top-right"
           toastOptions={{

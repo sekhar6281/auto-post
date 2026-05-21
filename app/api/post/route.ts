@@ -4,15 +4,29 @@ import { rateLimit } from "@/lib/rateLimit";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+/** Validates that a URL is hosted on Cloudinary — prevents SSRF via mediaUrls */
+function isCloudinaryUrl(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === "https:" && hostname === "res.cloudinary.com";
+  } catch {
+    return false;
+  }
+}
+
 const PostSchema = z.object({
   caption: z
     .string()
     .min(1, "Caption is required")
     .max(3000, "Caption exceeds LinkedIn's 3000-character limit"),
 
-  // Accept 1–9 image URLs OR exactly 1 video URL
+  // Each URL must be an HTTPS Cloudinary URL — no arbitrary server-side fetches
   mediaUrls: z
-    .array(z.string().url("Invalid media URL"))
+    .array(
+      z.string()
+        .url("Invalid media URL")
+        .refine(isCloudinaryUrl, { message: "Media must be uploaded through this app." })
+    )
     .min(0)
     .max(9, "LinkedIn supports up to 9 images per post")
     .optional(),
@@ -27,6 +41,19 @@ export async function POST(req: NextRequest) {
       { error: "Unauthorized — please sign in again" },
       { status: 401 }
     );
+  }
+
+  // Verify the request comes from our own frontend (CSRF / origin check)
+  const origin = req.headers.get("origin");
+  const host   = req.headers.get("host");
+  if (origin && host) {
+    try {
+      if (new URL(origin).host !== host) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // 5 posts per user per hour
@@ -67,7 +94,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await postToLinkedIn({
       accessToken: session.accessToken,
-      linkedinId: session.linkedinId,
+      linkedinId:  session.linkedinId,
       caption,
       mediaUrls,
       mediaType,
@@ -75,9 +102,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to post to LinkedIn.";
-    console.error("[post] LinkedIn error:", message.replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]"));
+    const message = err instanceof Error
+      ? err.message
+      : "Failed to post to LinkedIn.";
+    // Redact any tokens that may appear in error messages before logging
+    console.error("[post] Error:", message.replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]"));
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

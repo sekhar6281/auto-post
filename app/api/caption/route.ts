@@ -1,12 +1,21 @@
 import { auth } from "@/lib/auth";
 import { generateCaption } from "@/lib/groq";
 import { rateLimit } from "@/lib/rateLimit";
+import { isSafeUrl } from "@/lib/ssrfGuard";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+// context max is 300 chars — matches the client-side maxLength={300}
 const RequestSchema = z.object({
-  context:   z.string().max(500).optional().default(""),
-  summitUrl: z.string().url().optional(),
+  context:   z.string().max(300).optional().default(""),
+  summitUrl: z
+    .string()
+    .url()
+    .optional()
+    .refine(
+      (url) => !url || isSafeUrl(url).safe,
+      { message: "The URL is not allowed. Please use a public event website." }
+    ),
   tone:      z.enum(["professional", "startup-founder", "technical", "motivational"]),
   mediaType: z.enum(["image", "video"]),
   mediaUrl:  z.string().url().optional(),
@@ -18,27 +27,26 @@ const RequestSchema = z.object({
 async function fetchSummitContext(url: string): Promise<string> {
   try {
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 8000);
+    const tid        = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-          "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "Mozilla/5.0 (compatible; AutoPostBot/1.0)",
+        Accept:       "text/html,application/xhtml+xml",
       },
       signal: controller.signal,
     });
     clearTimeout(tid);
+
     const html = await res.text();
     const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<nav[\s\S]*?<\/nav>/gi, "")
-      .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+      .replace(/<script[\s\S]*?<\/script>/gi,  "")
+      .replace(/<style[\s\S]*?<\/style>/gi,    "")
+      .replace(/<nav[\s\S]*?<\/nav>/gi,        "")
+      .replace(/<footer[\s\S]*?<\/footer>/gi,  "")
       .replace(/<[^>]+>/g, " ")
-      .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+      .replace(/&amp;/g,  "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
       .replace(/&nbsp;/g, " ").replace(/&#\d+;/g, " ")
-      .replace(/\s+/g, " ")
+      .replace(/\s+/g,    " ")
       .trim();
     return text.slice(0, 3500);
   } catch {
@@ -50,6 +58,19 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Verify the request comes from our own frontend (not a cross-site request)
+  const origin = req.headers.get("origin");
+  const host   = req.headers.get("host");
+  if (origin && host) {
+    try {
+      if (new URL(origin).host !== host) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const { allowed, retryAfter } = rateLimit(
@@ -85,8 +106,11 @@ export async function POST(req: NextRequest) {
     const result = await generateCaption({ ...parsed.data, summitContext });
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Caption generation failed. Please try again.";
-    console.error("[caption] Groq error:", message);
+    const message = err instanceof Error
+      ? err.message
+      : "Caption generation failed. Please try again.";
+    // Server log only — never forward raw API errors to the client
+    console.error("[caption] Error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

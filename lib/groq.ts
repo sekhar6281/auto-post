@@ -5,19 +5,19 @@ export type Tone =
   | "motivational";
 
 export interface CaptionRequest {
-  context?: string;
-  tone: Tone;
-  mediaType: "image" | "video";
-  mediaUrl?: string;
+  context?:      string;
+  tone:          Tone;
+  mediaType:     "image" | "video";
+  mediaUrl?:     string;
   summitContext?: string;
 }
 
 export interface StructuredCaption {
-  hook: string;       // First scroll-stopping line
-  body: string;       // Main caption body (no hook, no hashtags)
-  hashtags: string[]; // e.g. ["#AI", "#LinkedIn", "#SaaS"]
-  fullCaption: string; // hook + "\n\n" + body + "\n\n" + hashtags joined
-  tokensUsed: number;
+  hook:        string;    // First scroll-stopping line
+  body:        string;    // Main caption body (no hook, no hashtags)
+  hashtags:    string[];  // e.g. ["#AI", "#LinkedIn", "#SaaS"]
+  fullCaption: string;    // hook + "\n\n" + body + "\n\n" + hashtags joined
+  tokensUsed:  number;
 }
 
 // ── Tone personality guides ──────────────────────────────────
@@ -94,34 +94,49 @@ export async function generateCaption(
   req: CaptionRequest
 ): Promise<StructuredCaption> {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
+  if (!apiKey) throw new Error("Caption service is not configured. Please contact support.");
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: buildUserPrompt(req) },
-      ],
-      max_tokens: 700,
-      temperature: 0.85,
-      response_format: { type: "json_object" },
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model:           "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user",   content: buildUserPrompt(req) },
+        ],
+        max_tokens:      700,
+        temperature:     0.85,
+        response_format: { type: "json_object" },
+      }),
+    });
+  } catch {
+    // Network-level error — don't expose internal details
+    throw new Error("Caption service is temporarily unreachable. Please try again.");
+  }
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Groq API error ${response.status}: ${err}`);
+    // Log full error server-side but return a safe message to the client
+    const rawErr = await response.text().catch(() => "");
+    console.error(`[groq] API error ${response.status}:`, rawErr.slice(0, 200));
+
+    if (response.status === 429) {
+      throw new Error("Caption service is busy. Please wait a moment and try again.");
+    }
+    if (response.status >= 500) {
+      throw new Error("Caption service is temporarily unavailable. Please try again shortly.");
+    }
+    throw new Error("Caption generation failed. Please try again.");
   }
 
   const data = await response.json();
-  const raw = data.choices?.[0]?.message?.content?.trim();
-  if (!raw) throw new Error("Empty response from Groq");
+  const raw  = data.choices?.[0]?.message?.content?.trim();
+  if (!raw) throw new Error("Empty response from caption service. Please regenerate.");
 
   // Strip markdown code fences if the model wrapped the JSON anyway
   const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
@@ -131,13 +146,13 @@ export async function generateCaption(
   try {
     parsed = JSON.parse(jsonStr);
   } catch {
-    throw new Error("Groq returned invalid JSON — please regenerate");
+    throw new Error("Caption format error — please regenerate.");
   }
 
   const { hook, body, hashtags } = parsed;
 
   if (!hook || !body || !Array.isArray(hashtags)) {
-    throw new Error("Incomplete caption data — please regenerate");
+    throw new Error("Incomplete caption data — please regenerate.");
   }
 
   const fullCaption = `${hook}\n\n${body}\n\n${hashtags.join(" ")}`;

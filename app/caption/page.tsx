@@ -6,6 +6,27 @@ import { CaptionEditor } from "@/components/CaptionEditor";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { CloudinaryResource } from "@/lib/cloudinary";
 
+/** Validates that a parsed object looks like a CloudinaryResource we stored */
+function isValidResource(item: unknown): item is CloudinaryResource {
+  if (typeof item !== "object" || item === null) return false;
+  const r = item as Record<string, unknown>;
+
+  // secure_url must be an HTTPS Cloudinary URL (prevents XSS via injected js: URLs)
+  if (
+    typeof r.secure_url !== "string" ||
+    !r.secure_url.startsWith("https://res.cloudinary.com/")
+  ) return false;
+
+  if (
+    typeof r.resource_type !== "string" ||
+    !["image", "video", "raw"].includes(r.resource_type)
+  ) return false;
+
+  if (typeof r.public_id !== "string") return false;
+
+  return true;
+}
+
 export default function CaptionPage() {
   const router                    = useRouter();
   const [mediaList, setMediaList] = useState<CloudinaryResource[]>([]);
@@ -14,9 +35,24 @@ export default function CaptionPage() {
   useEffect(() => {
     const raw = sessionStorage.getItem("uploadedMedia");
     if (!raw) { router.replace("/upload"); return; }
-    const parsed: CloudinaryResource[] = JSON.parse(raw);
-    if (!parsed.length) { router.replace("/upload"); return; }
-    setMediaList(parsed);
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // Corrupt storage — restart cleanly
+      sessionStorage.removeItem("uploadedMedia");
+      router.replace("/upload");
+      return;
+    }
+
+    if (!Array.isArray(parsed)) { router.replace("/upload"); return; }
+
+    // Validate each item — reject any with unexpected / dangerous values
+    const valid = parsed.filter(isValidResource);
+    if (!valid.length) { router.replace("/upload"); return; }
+
+    setMediaList(valid);
   }, [router]);
 
   const save = (text: string) => {

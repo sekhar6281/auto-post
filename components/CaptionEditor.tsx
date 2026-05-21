@@ -3,11 +3,13 @@
 import { useState } from "react";
 import {
   Sparkles, RefreshCw, Copy, CheckCheck, Loader2,
-  Zap, Hash, AlignLeft, Link2, CheckCircle2, AlertCircle, StickyNote,
+  Zap, Hash, AlignLeft, Link2, CheckCircle2, AlertCircle,
+  StickyNote, X, Pencil, ImageIcon, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import type { Tone, StructuredCaption } from "@/lib/groq";
+import type { CloudinaryResource } from "@/lib/cloudinary";
 
 const TONES: { value: Tone; label: string; emoji: string; desc: string }[] = [
   { value: "professional",    label: "Professional",    emoji: "💼", desc: "Executive voice"   },
@@ -17,12 +19,14 @@ const TONES: { value: Tone; label: string; emoji: string; desc: string }[] = [
 ];
 
 interface Props {
-  mediaUrl: string;
-  mediaType: "image" | "video";
+  mediaUrl:       string;
+  mediaType:      "image" | "video";
+  mediaItems:     CloudinaryResource[];
+  onDeleteMedia:  (idx: number) => void;
   onCaptionReady: (caption: string) => void;
 }
 
-export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
+export function CaptionEditor({ mediaUrl, mediaType, mediaItems, onDeleteMedia, onCaptionReady }: Props) {
   const [summitUrl, setSummitUrl] = useState("");
   const [context,   setContext]   = useState("");
   const [tone,      setTone]      = useState<Tone>("professional");
@@ -31,10 +35,10 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
   const [error,     setError]     = useState<string | null>(null);
   const [urlOk,     setUrlOk]     = useState<boolean | null>(null);
   const [copiedKey, setCK]        = useState<string | null>(null);
-  const [hook, setHook]           = useState("");
-  const [body, setBody]           = useState("");
-  const [tags, setTags]           = useState<string[]>([]);
-  const [newTag, setNewTag]       = useState("");
+  const [hook,      setHook]      = useState("");
+  const [body,      setBody]      = useState("");
+  const [tags,      setTags]      = useState<string[]>([]);
+  const [newTag,    setNewTag]    = useState("");
 
   const full = (h: string, b: string, t: string[]) => `${h}\n\n${b}\n\n${t.join(" ")}`;
 
@@ -56,9 +60,9 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
     setUrlOk(null);
     try {
       const res  = await fetch("/api/caption", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summitUrl: summitUrl || undefined, context, tone, mediaType, mediaUrl }),
+        body:    JSON.stringify({ summitUrl: summitUrl || undefined, context, tone, mediaType, mediaUrl }),
       });
       const data = await res.json() as StructuredCaption & { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Failed");
@@ -91,34 +95,33 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
     if (tags.includes(f)) return;
     const u = [...tags, f]; setTags(u); setNewTag(""); onChange(hook, body, u);
   };
-  const removeTag = (t: string) => { const u = tags.filter(x => x !== t); setTags(u); onChange(hook, body, u); };
-  const chars     = full(hook, body, tags).length;
+  const removeTag = (t: string) => {
+    const u = tags.filter(x => x !== t); setTags(u); onChange(hook, body, u);
+  };
+  const chars = full(hook, body, tags).length;
 
   return (
     <div className="space-y-6">
 
-      {/* ── Summit / Event URL ─────────────────────────── */}
+      {/* ── Summit URL ──────────────────────────────────── */}
       <div>
         <label className="block text-lg font-semibold text-slate-700 mb-2.5">
           Official Summit / Event URL
-          <span className="ml-2 text-sm font-normal text-slate-400">(paste the event website link)</span>
+          <span className="ml-2 text-sm font-normal text-slate-400">paste the event website link</span>
         </label>
         <div className="relative">
           <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
           <input
             value={summitUrl}
             onChange={e => { setSummitUrl(e.target.value); setUrlOk(null); }}
-            placeholder="https://summitname.com  or  https://lu.ma/event/..."
+            placeholder="https://your-event-website.com"
             className={cn(
               "input-base pl-12 pr-12",
               summitUrl && !isValidUrl(summitUrl) && "border-red-300 focus:border-red-400 focus:ring-red-200"
             )}
           />
-          {summitUrl && isValidUrl(summitUrl) && urlOk === null && (
-            <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-          )}
-          {urlOk === true && (
-            <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+          {summitUrl && isValidUrl(summitUrl) && (
+            <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400" />
           )}
         </div>
         {summitUrl && isValidUrl(summitUrl) && (
@@ -129,13 +132,13 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
         )}
       </div>
 
-      {/* ── Additional context (optional) ───────────────── */}
+      {/* ── Additional notes ────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <label className="text-lg font-semibold text-slate-700 flex items-center gap-2">
             <StickyNote className="w-4 h-4 text-slate-400" />
             Additional notes
-            <span className="text-sm font-normal text-slate-400">(optional)</span>
+            <span className="text-sm font-normal text-slate-400">optional</span>
           </label>
           <span className="text-base text-slate-400 tabular-nums">{context.length}/300</span>
         </div>
@@ -143,13 +146,13 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
           value={context}
           onChange={e => setContext(e.target.value)}
           onKeyDown={e => e.key === "Enter" && generate()}
-          placeholder="e.g. met 3 speakers, loved the AI panel, first time attending…"
+          placeholder="e.g. met the keynote speaker, loved the AI panel, first time attending…"
           maxLength={300}
           className="input-base"
         />
       </div>
 
-      {/* ── Tone ─────────────────────────────────────────── */}
+      {/* ── Tone ────────────────────────────────────────── */}
       <div>
         <label className="block text-lg font-semibold text-slate-700 mb-3">Tone</label>
         <div className="grid grid-cols-2 gap-3">
@@ -172,7 +175,7 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
         </div>
       </div>
 
-      {/* ── Generate button ───────────────────────────────── */}
+      {/* ── Generate button ──────────────────────────────── */}
       <button
         onClick={generate}
         disabled={loading || (!summitUrl && !context.trim())}
@@ -187,15 +190,13 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
           : <><Sparkles className="w-5 h-5" />Generate Caption</>}
       </button>
 
-      {/* ── URL fetch notice ──────────────────────────────── */}
       {loading && summitUrl && (
-        <div className="flex items-center gap-3 text-base text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-5 py-3 animate-fade-in">
+        <div className="flex items-center gap-3 text-base text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-5 py-3">
           <Loader2 className="w-4 h-4 animate-spin shrink-0" />
           Fetching summit info from the website, this may take a few seconds…
         </div>
       )}
 
-      {/* ── Error ────────────────────────────────────────── */}
       {error && (
         <div className="flex items-center gap-3 text-lg text-red-600 bg-red-50 border border-red-100 rounded-xl px-5 py-4">
           <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
@@ -203,7 +204,55 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
         </div>
       )}
 
-      {/* ── Output sections ──────────────────────────────── */}
+      {/* ── Uploaded images grid ─────────────────────────── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-slate-400" />
+            Your photos
+            <span className="text-base font-normal text-slate-400">({mediaItems.length})</span>
+          </h3>
+          <p className="text-sm text-slate-400">Hover to delete</p>
+        </div>
+        <div className={cn(
+          "grid gap-3",
+          mediaItems.length === 1 ? "grid-cols-1 max-w-xs" :
+          mediaItems.length === 2 ? "grid-cols-2" :
+          "grid-cols-3"
+        )}>
+          {mediaItems.map((item, idx) => (
+            <div
+              key={idx}
+              className="relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm group"
+            >
+              {item.resource_type === "video"
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <video src={item.secure_url} className="w-full h-full object-cover" muted />
+                // eslint-disable-next-line @next/next/no-img-element
+                : <img src={item.secure_url} alt="" className="w-full h-full object-cover" />}
+
+              {/* Delete button */}
+              <button
+                onClick={() => {
+                  onDeleteMedia(idx);
+                  toast.success("Image removed");
+                }}
+                className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 shadow-md"
+                title="Remove image"
+              >
+                <Trash2 className="w-4 h-4 text-white" />
+              </button>
+
+              {/* Index badge */}
+              <div className="absolute bottom-2 left-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150">
+                <span className="text-white text-xs font-bold">{idx + 1}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Caption output ───────────────────────────────── */}
       {result && (
         <div className="space-y-4 animate-slide-up">
 
@@ -220,15 +269,21 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
               <div className="flex items-center gap-2 text-amber-700 text-base font-bold uppercase tracking-wider">
                 <Zap className="w-4 h-4" /> Hook
               </div>
-              <button onClick={() => copy(hook, "hook")} className="text-amber-500 hover:text-amber-700 transition-colors">
-                {copiedKey === "hook" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-              </button>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1 text-sm text-amber-500 font-medium">
+                  <Pencil className="w-3.5 h-3.5" /> Editable
+                </span>
+                <button onClick={() => copy(hook, "hook")} className="text-amber-500 hover:text-amber-700 transition-colors">
+                  {copiedKey === "hook" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <textarea
               value={hook}
               onChange={e => { setHook(e.target.value); onChange(e.target.value, body, tags); }}
               rows={2}
-              className="w-full px-5 py-4 text-lg font-semibold text-slate-800 leading-relaxed focus:outline-none resize-none bg-white"
+              placeholder="Edit your hook line here…"
+              className="w-full px-5 py-4 text-lg font-semibold text-slate-800 leading-relaxed focus:outline-none focus:bg-amber-50/30 resize-none bg-white transition-colors"
             />
           </div>
 
@@ -236,17 +291,23 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 bg-blue-50 border-b border-blue-100">
               <div className="flex items-center gap-2 text-blue-700 text-base font-bold uppercase tracking-wider">
-                <AlignLeft className="w-4 h-4" /> Body
+                <AlignLeft className="w-4 h-4" /> Caption Body
               </div>
-              <button onClick={() => copy(body, "body")} className="text-blue-500 hover:text-blue-700 transition-colors">
-                {copiedKey === "body" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-              </button>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1 text-sm text-blue-500 font-medium">
+                  <Pencil className="w-3.5 h-3.5" /> Editable
+                </span>
+                <button onClick={() => copy(body, "body")} className="text-blue-500 hover:text-blue-700 transition-colors">
+                  {copiedKey === "body" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <textarea
               value={body}
               onChange={e => { setBody(e.target.value); onChange(hook, e.target.value, tags); }}
               rows={8}
-              className="w-full px-5 py-4 text-lg text-slate-800 leading-relaxed focus:outline-none resize-none bg-white"
+              placeholder="Edit your caption body here…"
+              className="w-full px-5 py-4 text-lg text-slate-800 leading-relaxed focus:outline-none focus:bg-blue-50/20 resize-none bg-white transition-colors"
             />
           </div>
 
@@ -256,16 +317,27 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
               <div className="flex items-center gap-2 text-violet-700 text-base font-bold uppercase tracking-wider">
                 <Hash className="w-4 h-4" /> Hashtags ({tags.length})
               </div>
-              <button onClick={() => copy(tags.join(" "), "tags")} className="text-violet-500 hover:text-violet-700 transition-colors">
-                {copiedKey === "tags" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-              </button>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1 text-sm text-violet-500 font-medium">
+                  <Pencil className="w-3.5 h-3.5" /> Editable
+                </span>
+                <button onClick={() => copy(tags.join(" "), "tags")} className="text-violet-500 hover:text-violet-700 transition-colors">
+                  {copiedKey === "tags" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             <div className="px-5 py-4 space-y-4 bg-white">
               <div className="flex flex-wrap gap-2">
                 {tags.map(tag => (
                   <span key={tag} className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 border border-violet-200 text-base font-medium px-3 py-1.5 rounded-full">
                     {tag}
-                    <button onClick={() => removeTag(tag)} className="text-violet-400 hover:text-violet-700 font-bold leading-none ml-0.5 text-lg">×</button>
+                    <button
+                      onClick={() => removeTag(tag)}
+                      className="text-violet-400 hover:text-red-500 transition-colors ml-0.5"
+                      title="Remove hashtag"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -274,10 +346,12 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
                   value={newTag}
                   onChange={e => setNewTag(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && addTag()}
-                  placeholder="Add hashtag…"
+                  placeholder="Type a hashtag and press Enter…"
                   className="flex-1 text-base px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white"
                 />
-                <button onClick={addTag} className="text-base px-4 py-2.5 bg-violet-100 hover:bg-violet-200 text-violet-700 font-semibold rounded-lg transition-colors">Add</button>
+                <button onClick={addTag} className="text-base px-4 py-2.5 bg-violet-100 hover:bg-violet-200 text-violet-700 font-semibold rounded-lg transition-colors">
+                  Add
+                </button>
               </div>
             </div>
           </div>

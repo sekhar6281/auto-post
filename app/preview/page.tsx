@@ -92,7 +92,10 @@ export default function PreviewPage() {
   const createNewPost = () => {
     // Cancel the auto sign-out timer then restart from Step 1
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    sessionStorage.clear();
+    // Only clear post data — do NOT clear sessionActive or SessionGuard
+    // will think the tab was reopened and sign the user out immediately
+    sessionStorage.removeItem("uploadedMedia");
+    sessionStorage.removeItem("generatedCaption");
     router.push("/upload");
   };
 

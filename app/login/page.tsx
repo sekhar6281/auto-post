@@ -157,7 +157,7 @@ export default function LoginPage() {
                     <p className="text-base font-semibold text-slate-700">Auto sign-out after posting</p>
                   </div>
                   <p className="text-sm text-slate-400 mt-0.5">
-                    Automatically log out once your post is published. Recommended for shared devices.
+                    After posting, a 15-second countdown will sign you out and wipe all session data from this browser.
                   </p>
                 </div>
               </label>

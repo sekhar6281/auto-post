@@ -1,28 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { PostPreview } from "@/components/PostPreview";
 import {
   ArrowLeft, Send, Loader2, CheckCircle2, ExternalLink,
-  RotateCcw, AlertCircle, Plus, LogOut, ShieldCheck,
+  AlertCircle, Plus, LogOut, ShieldCheck,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { CloudinaryResource } from "@/lib/cloudinary";
 
 type Status = "idle" | "posting" | "success" | "error";
 
+/** Wipe every piece of data this site has stored — tokens, emails, cache, everything */
+function clearAllBrowserData() {
+  try { localStorage.clear();   } catch {}
+  try { sessionStorage.clear(); } catch {}
+  if (typeof window !== "undefined" && "caches" in window) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+}
+
 export default function PreviewPage() {
-  const router                      = useRouter();
-  const { data: session }           = useSession();
-  const [mediaList,  setML]         = useState<CloudinaryResource[]>([]);
-  const [caption,    setCaption]    = useState("");
-  const [status,     setStatus]     = useState<Status>("idle");
-  const [postUrl,    setPostUrl]    = useState("");
-  const [errorMsg,   setError]      = useState("");
-  const [autoSigningOut, setAutoSigningOut] = useState(false);
-  const [countdown,  setCountdown]  = useState(5);
+  const router            = useRouter();
+  const { data: session } = useSession();
+  const [mediaList, setML]  = useState<CloudinaryResource[]>([]);
+  const [caption,   setCaption] = useState("");
+  const [status,    setStatus]  = useState<Status>("idle");
+  const [postUrl,   setPostUrl] = useState("");
+  const [errorMsg,  setError]   = useState("");
+  const [countdown, setCountdown] = useState(15);
+
+  // Stable ref so createNewPost can cancel the interval started inside post()
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const rm = sessionStorage.getItem("uploadedMedia");
@@ -31,6 +42,9 @@ export default function PreviewPage() {
     setML(JSON.parse(rm)); setCaption(rc);
   }, [router]);
 
+  // Cleanup interval if the component unmounts for any reason
+  useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
+
   const post = async () => {
     if (!mediaList.length || !caption) return;
     setStatus("posting"); setError("");
@@ -38,35 +52,37 @@ export default function PreviewPage() {
     const mediaType = isVideo ? "video" : "image";
     try {
       const res  = await fetch("/api/post", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caption, mediaUrls: mediaList.map(m => m.secure_url), mediaType }),
+        body:    JSON.stringify({ caption, mediaUrls: mediaList.map(m => m.secure_url), mediaType }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Post failed");
+
       setPostUrl(data.postUrl);
       setStatus("success");
       toast.success("Posted to LinkedIn! 🎉");
-      // Clear post data from storage
+
+      // Clear post data immediately after a successful post
       sessionStorage.removeItem("uploadedMedia");
       sessionStorage.removeItem("generatedCaption");
 
-      // Auto sign-out if requested at login
-      if (localStorage.getItem("autoLogoutAfterPost") === "true") {
-        setAutoSigningOut(true);
-        let secs = 5;
-        const interval = setInterval(() => {
-          secs -= 1;
-          setCountdown(secs);
-          if (secs <= 0) {
-            clearInterval(interval);
-            // Clear all browser data for this site
-            try { localStorage.clear();   } catch {}
-            try { sessionStorage.clear(); } catch {}
-            signOut({ callbackUrl: "/login" });
-          }
-        }, 1000);
-      }
+      // Always start a 15-second auto sign-out countdown.
+      // Clicking "Create another post" cancels it.
+      let secs = 15;
+      setCountdown(secs);
+      intervalRef.current = setInterval(() => {
+        secs -= 1;
+        setCountdown(secs);
+        if (secs <= 0) {
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          // Wipe ALL browser-side data: tokens, emails, session info, SW caches
+          clearAllBrowserData();
+          signOut({ callbackUrl: "/login" });
+        }
+      }, 1000);
+
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setStatus("error"); setError(msg); toast.error(msg);
@@ -74,7 +90,8 @@ export default function PreviewPage() {
   };
 
   const createNewPost = () => {
-    // Clear ALL post data so the user starts completely fresh
+    // Cancel the auto sign-out timer then restart from Step 1
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
     sessionStorage.clear();
     router.push("/upload");
   };
@@ -88,7 +105,7 @@ export default function PreviewPage() {
 
   /* ── Success screen ───────────────────────────────────── */
   if (status === "success") return (
-    <div className="animate-scale-in max-w-lg mx-auto text-center py-14">
+    <div className="animate-scale-in max-w-lg mx-auto text-center py-12">
 
       {/* Big check */}
       <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm">
@@ -98,54 +115,70 @@ export default function PreviewPage() {
       <h1 className="text-3xl font-bold text-slate-900 mb-3">
         You&apos;re live on LinkedIn! 🎉
       </h1>
-      <p className="text-slate-500 text-lg mb-8">
+      <p className="text-slate-500 text-lg mb-6">
         {mediaList.length > 1
           ? `Your post with ${mediaList.length} images is published.`
           : "Your post is published and visible to your network."}
       </p>
 
-      {/* Security notice — always shown */}
-      <div className="flex items-center justify-center gap-2 text-sm text-slate-400 bg-slate-50 border border-slate-100 rounded-xl px-5 py-3 mb-8">
-        <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-        Your post data has been cleared from this browser&apos;s storage.
+      {/* Security notice */}
+      <div className="flex items-start justify-center gap-2.5 text-sm text-slate-500 bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-3.5 mb-7 text-left">
+        <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+        <span>
+          <span className="font-semibold text-emerald-700">All data cleared.</span>{" "}
+          Your post data, session token, and any account info stored in this browser have been removed.
+          Your LinkedIn email &amp; password were never stored here — they go directly to LinkedIn&apos;s secure servers.
+        </span>
       </div>
 
-      {/* Auto sign-out countdown or action buttons */}
-      {autoSigningOut ? (
-        <div className="bg-amber-50 border border-amber-100 rounded-2xl px-6 py-6 text-center">
-          <LogOut className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-          <p className="text-lg font-semibold text-amber-700 mb-1">
-            Signing you out in {countdown}…
-          </p>
-          <p className="text-base text-amber-600">
-            All session data is being cleared for your security.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <a
-            href={postUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary justify-center"
-          >
-            View on LinkedIn <ExternalLink className="w-5 h-5" />
-          </a>
+      {/* Action buttons */}
+      <div className="flex flex-col gap-4 mb-7">
+        <a
+          href={postUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary justify-center"
+        >
+          View on LinkedIn <ExternalLink className="w-5 h-5" />
+        </a>
 
-          {/* Create post again — restarts the full flow from Step 1 */}
-          <button
-            onClick={createNewPost}
-            className="btn-secondary justify-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Create another post
-          </button>
+        <button
+          onClick={createNewPost}
+          className="btn-secondary justify-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Create another post
+        </button>
+      </div>
 
-          <p className="text-sm text-slate-400 mt-1">
-            "Create another post" clears all data and takes you back to Step 1 — Upload.
-          </p>
+      {/* Auto sign-out countdown — always shown */}
+      <div className="bg-amber-50 border border-amber-100 rounded-2xl px-6 py-6">
+        <LogOut className="w-7 h-7 text-amber-500 mx-auto mb-3" />
+
+        {/* Big countdown number */}
+        <div className="flex items-baseline justify-center gap-2 mb-2">
+          <span className="text-5xl font-bold tabular-nums text-amber-600 leading-none">
+            {countdown}
+          </span>
+          <span className="text-lg font-medium text-amber-600">sec</span>
         </div>
-      )}
+
+        <p className="text-base font-semibold text-amber-700 mb-1">
+          Signing out automatically for your security
+        </p>
+        <p className="text-sm text-amber-500">
+          Click &quot;Create another post&quot; above to cancel and start a new post instead.
+        </p>
+
+        {/* Progress bar */}
+        <div className="mt-4 h-1.5 bg-amber-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-amber-400 rounded-full transition-all duration-1000 ease-linear"
+            style={{ width: `${(countdown / 15) * 100}%` }}
+          />
+        </div>
+      </div>
+
     </div>
   );
 

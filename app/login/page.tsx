@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { LinkedInIcon } from "@/components/icons/LinkedInIcon";
-import { Sparkles, ImagePlus, Send, Shield, Lock, LogOut, Save } from "lucide-react";
+import { Sparkles, ImagePlus, Send, Shield, Lock } from "lucide-react";
 
 const FEATURES = [
   { icon: ImagePlus, text: "Upload photos & videos"             },
@@ -13,17 +13,10 @@ const FEATURES = [
 ];
 
 export default function LoginPage() {
-  const [rememberMe,  setRememberMe]  = useState(true);
-  const [autoLogout,  setAutoLogout]  = useState(false);
-  const [loading,     setLoading]     = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSignIn = () => {
     setLoading(true);
-    // Persist preferences before the OAuth redirect
-    localStorage.setItem("rememberMe",          String(rememberMe));
-    localStorage.setItem("autoLogoutAfterPost", String(autoLogout));
-    // If not remembering, clear any stale session marker so SessionGuard kicks in
-    if (!rememberMe) sessionStorage.removeItem("sessionActive");
     signIn("linkedin", { callbackUrl: "/dashboard" });
   };
 
@@ -92,77 +85,6 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* ── Security preferences ─────────────────── */}
-            <div className="bg-slate-50 rounded-xl border border-slate-100 p-5 mb-6 space-y-4">
-              <p className="text-base font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Shield className="w-4 h-4" /> Security preferences
-              </p>
-
-              {/* Remember me */}
-              <label className="flex items-start gap-3.5 cursor-pointer group">
-                <div className="relative mt-0.5">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={e => setRememberMe(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                    rememberMe
-                      ? "bg-linkedin-500 border-linkedin-500"
-                      : "border-slate-300 bg-white group-hover:border-slate-400"
-                  }`}>
-                    {rememberMe && (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Save className="w-4 h-4 text-slate-500" />
-                    <p className="text-base font-semibold text-slate-700">Save login info</p>
-                  </div>
-                  <p className="text-sm text-slate-400 mt-0.5">
-                    Stay signed in for 30 days. Uncheck on shared or public devices.
-                  </p>
-                </div>
-              </label>
-
-              {/* Auto-logout after post */}
-              <label className="flex items-start gap-3.5 cursor-pointer group">
-                <div className="relative mt-0.5">
-                  <input
-                    type="checkbox"
-                    checked={autoLogout}
-                    onChange={e => setAutoLogout(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                    autoLogout
-                      ? "bg-linkedin-500 border-linkedin-500"
-                      : "border-slate-300 bg-white group-hover:border-slate-400"
-                  }`}>
-                    {autoLogout && (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <LogOut className="w-4 h-4 text-slate-500" />
-                    <p className="text-base font-semibold text-slate-700">Auto sign-out after posting</p>
-                  </div>
-                  <p className="text-sm text-slate-400 mt-0.5">
-                    After posting, a 15-second countdown will sign you out and wipe all session data from this browser.
-                  </p>
-                </div>
-              </label>
-            </div>
-
             {/* Sign-in button */}
             <button
               onClick={handleSignIn}
@@ -193,9 +115,9 @@ export default function LoginPage() {
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: "OAuth 2.0",    sub: "Secure"  },
-                { label: "No Password",  sub: "Stored"  },
-                { label: "Revoke",       sub: "Anytime" },
+                { label: "OAuth 2.0",   sub: "Secure"  },
+                { label: "No Password", sub: "Stored"  },
+                { label: "Revoke",      sub: "Anytime" },
               ].map(b => (
                 <div key={b.label} className="text-center py-4 px-3 bg-slate-50 rounded-xl border border-slate-100">
                   <p className="text-base font-semibold text-slate-700">{b.label}</p>
@@ -205,13 +127,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Privacy note about credentials */}
+          {/* Privacy note */}
           <div className="mt-5 flex items-start gap-3 bg-white border border-slate-100 rounded-xl px-5 py-4 shadow-sm">
             <Lock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-sm text-slate-500 leading-relaxed">
-              <span className="font-semibold text-slate-600">Your email & password never touch this site.</span>{" "}
+              <span className="font-semibold text-slate-600">Your email &amp; password never touch this site.</span>{" "}
               You log in directly on LinkedIn&apos;s secure servers — we only receive a temporary access token.
-              For extra privacy on shared computers, use your browser&apos;s <span className="font-medium">Incognito / Private</span> mode so the browser saves nothing.
+              For extra privacy on shared computers, use your browser&apos;s <span className="font-medium">Incognito / Private</span> mode.
             </p>
           </div>
 

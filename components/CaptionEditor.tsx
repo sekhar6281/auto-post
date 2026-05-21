@@ -162,16 +162,16 @@ export function CaptionEditor({ mediaUrl, mediaType, mediaItems, onDeleteMedia, 
           {TONES.map(t => (
             <button key={t.value} onClick={() => setTone(t.value)}
               className={cn(
-                "flex items-center gap-2 sm:gap-3 px-3 py-3 sm:px-5 sm:py-4 rounded-xl border-2 text-left transition-all duration-150",
+                "flex items-center gap-2 sm:gap-3 px-3 py-2.5 sm:px-5 sm:py-4 rounded-xl border-2 text-left transition-all duration-150 min-w-0",
                 tone === t.value
                   ? "border-linkedin-500 bg-linkedin-50 shadow-sm"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
               )}
             >
-              <span className="text-2xl shrink-0">{t.emoji}</span>
-              <div>
-                <p className={cn("text-lg font-semibold leading-tight", tone === t.value ? "text-linkedin-600" : "text-slate-700")}>{t.label}</p>
-                <p className="text-sm text-slate-400 mt-0.5">{t.desc}</p>
+              <span className="text-xl sm:text-2xl shrink-0">{t.emoji}</span>
+              <div className="min-w-0">
+                <p className={cn("text-xs sm:text-lg font-semibold leading-tight truncate", tone === t.value ? "text-linkedin-600" : "text-slate-700")}>{t.label}</p>
+                <p className="hidden sm:block text-sm text-slate-400 mt-0.5">{t.desc}</p>
               </div>
             </button>
           ))}

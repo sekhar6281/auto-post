@@ -79,7 +79,7 @@ export default function PreviewPage() {
       // the interval, so the signOut below is never reached.
       let secs = 15;
       setCountdown(secs);
-      intervalRef.current = setInterval(() => {
+      intervalRef.current = setInterval(async () => {
         // If the user already clicked "Create another post", stop immediately
         if (cancelledRef.current) {
           clearInterval(intervalRef.current!);
@@ -92,7 +92,11 @@ export default function PreviewPage() {
           clearInterval(intervalRef.current!);
           intervalRef.current = null;
           clearAllBrowserData();
-          signOut({ callbackUrl: "/login" });
+          try {
+            await signOut({ callbackUrl: "/login" });
+          } catch {
+            window.location.href = "/login";
+          }
         }
       }, 1000);
 

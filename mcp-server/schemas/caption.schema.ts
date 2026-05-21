@@ -31,7 +31,7 @@ export const CaptionOutputSchema = z.object({
   body:         z.string().describe("Main caption body"),
   hashtags:     z.array(z.string()).describe("4–6 relevant hashtags"),
   full_caption: z.string().describe("Complete formatted caption ready to post"),
-  tokens_used:  z.number().describe("DeepSeek tokens consumed"),
+  tokens_used:  z.number().describe("Groq tokens consumed"),
 });
 
 export type CaptionOutput = z.infer<typeof CaptionOutputSchema>;

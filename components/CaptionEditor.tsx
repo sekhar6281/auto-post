@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Sparkles, RefreshCw, Copy, CheckCheck, Loader2, Zap, Hash, AlignLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
-import type { Tone, StructuredCaption } from "@/lib/deepseek";
+import type { Tone, StructuredCaption } from "@/lib/groq";
 
 const TONES: { value: Tone; label: string; emoji: string; desc: string }[] = [
   { value: "professional",    label: "Professional",    emoji: "💼", desc: "Executive voice"    },
@@ -102,7 +102,7 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
           (loading || !context.trim()) && "opacity-50 cursor-not-allowed shadow-none"
         )}
       >
-        {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Generating with DeepSeek…</>
+        {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Generating with Groq…</>
           : result ? <><RefreshCw className="w-5 h-5" />Regenerate Caption</>
           : <><Sparkles className="w-5 h-5" />Generate Caption</>}
       </button>

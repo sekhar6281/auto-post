@@ -4,7 +4,7 @@
  * Exposes 3 tools to any MCP client (Claude Desktop, Claude Code, etc.)
  *
  * Tools:
- *   generate_caption     — AI caption via DeepSeek
+ *   generate_caption     — AI caption via Groq
  *   upload_media         — Upload to Cloudinary
  *   publish_linkedin_post — Post to LinkedIn
  *
@@ -37,7 +37,7 @@ const TOOLS = [
   {
     name: "generate_caption",
     description:
-      "Generate a professional LinkedIn caption using DeepSeek AI. " +
+      "Generate a professional LinkedIn caption using Groq AI. " +
       "Returns structured output with hook, body, hashtags, and full caption.",
     inputSchema: {
       type: "object",

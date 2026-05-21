@@ -29,7 +29,7 @@ export default function CaptionPage() {
     <div className="animate-fade-in">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Generate AI caption</h1>
-        <p className="mt-2 text-slate-500 text-lg">Describe your post in one line — DeepSeek writes the rest.</p>
+        <p className="mt-2 text-slate-500 text-lg">Describe your post in one line — Groq AI writes the rest.</p>
       </div>
 
       {/* Thumbnails */}

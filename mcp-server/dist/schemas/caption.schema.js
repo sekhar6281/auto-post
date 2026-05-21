@@ -27,6 +27,6 @@ exports.CaptionOutputSchema = zod_1.z.object({
     body: zod_1.z.string().describe("Main caption body"),
     hashtags: zod_1.z.array(zod_1.z.string()).describe("4–6 relevant hashtags"),
     full_caption: zod_1.z.string().describe("Complete formatted caption ready to post"),
-    tokens_used: zod_1.z.number().describe("DeepSeek tokens consumed"),
+    tokens_used: zod_1.z.number().describe("Groq tokens consumed"),
 });
 //# sourceMappingURL=caption.schema.js.map

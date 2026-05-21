@@ -4,7 +4,7 @@
  * Exposes 3 tools to any MCP client (Claude Desktop, Claude Code, etc.)
  *
  * Tools:
- *   generate_caption     — AI caption via DeepSeek
+ *   generate_caption     — AI caption via Groq
  *   upload_media         — Upload to Cloudinary
  *   publish_linkedin_post — Post to LinkedIn
  *

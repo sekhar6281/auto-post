@@ -23,9 +23,9 @@ Respond with valid JSON ONLY:
   "hashtags": ["#Tag1", "#Tag2", "#Tag3", "#Tag4"]
 }`;
 async function generateCaptionTool(input) {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey)
-        throw new Error("DEEPSEEK_API_KEY not configured");
+        throw new Error("GROQ_API_KEY not configured");
     const userPrompt = `Generate a LinkedIn caption.
 
 Context: ${input.context}
@@ -34,14 +34,14 @@ Media type: ${input.media_type === "video" ? "Video post" : "Image post"}
 ${input.media_url ? `Media URL: ${input.media_url}` : ""}
 
 Return JSON only.`;
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            model: "deepseek-chat",
+            model: "llama-3.3-70b-versatile",
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
                 { role: "user", content: userPrompt },
@@ -53,13 +53,14 @@ Return JSON only.`;
     });
     if (!response.ok) {
         const err = await response.text();
-        throw new Error(`DeepSeek error ${response.status}: ${err}`);
+        throw new Error(`Groq error ${response.status}: ${err}`);
     }
     const data = await response.json();
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw)
-        throw new Error("Empty response from DeepSeek");
-    const parsed = JSON.parse(raw);
+        throw new Error("Empty response from Groq");
+    const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const parsed = JSON.parse(jsonStr);
     if (!parsed.hook || !parsed.body || !Array.isArray(parsed.hashtags)) {
         throw new Error("Malformed caption response — please retry");
     }

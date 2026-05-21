@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { generateCaption } from "@/lib/deepseek";
+import { generateCaption } from "@/lib/groq";
 import { rateLimit } from "@/lib/rateLimit";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Caption generation failed. Please try again.";
-    console.error("[caption] DeepSeek error:", message);
+    console.error("[caption] Groq error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

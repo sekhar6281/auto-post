@@ -108,10 +108,13 @@ export async function generateCaption(
   const raw = data.choices?.[0]?.message?.content?.trim();
   if (!raw) throw new Error("Empty response from DeepSeek");
 
+  // Strip markdown code fences if the model wrapped the JSON anyway
+  const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
   // Parse structured JSON
   let parsed: { hook: string; body: string; hashtags: string[] };
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(jsonStr);
   } catch {
     throw new Error("DeepSeek returned invalid JSON — please regenerate");
   }

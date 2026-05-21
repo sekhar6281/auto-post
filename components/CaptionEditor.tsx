@@ -58,21 +58,19 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
 
       {/* Context */}
       <div>
-        <label className="block text-lg font-semibold text-slate-700 mb-2.5">
-          What&apos;s this post about? <span className="text-red-400">*</span>
-        </label>
-        <div className="relative">
-          <input
-            value={context} onChange={e => setContext(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && generate()}
-            placeholder="e.g. just shipped v2 of my SaaS after 3 months of building…"
-            maxLength={300}
-            className="input-base pr-16"
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base text-slate-400">
-            {context.length}/300
-          </span>
+        <div className="flex items-center justify-between mb-2.5">
+          <label className="text-lg font-semibold text-slate-700">
+            What&apos;s this post about? <span className="text-red-400">*</span>
+          </label>
+          <span className="text-base text-slate-400 tabular-nums">{context.length}/300</span>
         </div>
+        <input
+          value={context} onChange={e => setContext(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && generate()}
+          placeholder="e.g. just shipped v2 of my SaaS after 3 months of building…"
+          maxLength={300}
+          className="input-base"
+        />
       </div>
 
       {/* Tone */}

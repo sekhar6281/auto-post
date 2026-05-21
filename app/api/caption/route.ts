@@ -49,10 +49,8 @@ export async function POST(req: NextRequest) {
     const result = await generateCaption(parsed.data);
     return NextResponse.json(result);
   } catch (err) {
-    console.error("[caption] DeepSeek error:", err);
-    return NextResponse.json(
-      { error: "Caption generation failed. Please try again." },
-      { status: 500 }
-    );
+    const message = err instanceof Error ? err.message : "Caption generation failed. Please try again.";
+    console.error("[caption] DeepSeek error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -17,7 +17,7 @@ export default function UploadPage() {
         <p className="mt-2 text-slate-500 text-lg">Up to 9 photos or 1 video to share on LinkedIn.</p>
       </div>
 
-      <div className="card p-8">
+      <div className="card p-4 sm:p-8">
         <MediaUploader onUploadComplete={r => { setMedia(r); sessionStorage.setItem("uploadedMedia", JSON.stringify(r)); }} />
       </div>
 

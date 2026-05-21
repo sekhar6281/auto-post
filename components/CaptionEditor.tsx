@@ -162,7 +162,7 @@ export function CaptionEditor({ mediaUrl, mediaType, mediaItems, onDeleteMedia, 
           {TONES.map(t => (
             <button key={t.value} onClick={() => setTone(t.value)}
               className={cn(
-                "flex items-center gap-3 px-5 py-4 rounded-xl border-2 text-left transition-all duration-150",
+                "flex items-center gap-2 sm:gap-3 px-3 py-3 sm:px-5 sm:py-4 rounded-xl border-2 text-left transition-all duration-150",
                 tone === t.value
                   ? "border-linkedin-500 bg-linkedin-50 shadow-sm"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"

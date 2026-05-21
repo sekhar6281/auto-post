@@ -15,7 +15,7 @@ export async function Navbar({ user }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50">
       {tokenExpired && (
-        <div className="bg-amber-500 px-6 py-3.5 flex items-center justify-center gap-2 text-xl text-white font-medium">
+        <div className="bg-amber-500 px-4 py-3 flex items-center justify-center gap-2 text-base sm:text-xl text-white font-medium">
           <AlertTriangle className="w-5 h-5 shrink-0" />
           Session expired —&nbsp;
           <SignOutButton
@@ -26,7 +26,7 @@ export async function Navbar({ user }: NavbarProps) {
       )}
 
       <nav className="glass border-b border-slate-200/60 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between" style={{ height: "76px" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-[60px] sm:h-[76px]">
 
           {/* Brand */}
           <Link href="/dashboard" className="flex items-center gap-3 group">

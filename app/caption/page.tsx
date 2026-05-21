@@ -81,7 +81,7 @@ export default function CaptionPage() {
         </p>
       </div>
 
-      <div className="card p-8">
+      <div className="card p-4 sm:p-8">
         <CaptionEditor
           mediaUrl={primary.secure_url}
           mediaType={mediaType}

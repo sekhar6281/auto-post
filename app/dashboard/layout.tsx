@@ -13,7 +13,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar user={session.user} />
-      <main className="max-w-6xl mx-auto px-6 py-12">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12">{children}</main>
     </div>
   );
 }

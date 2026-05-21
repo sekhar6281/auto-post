@@ -66,7 +66,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right login panel ────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-14 bg-slate-50">
+      <div className="flex-1 flex items-center justify-center p-5 sm:p-8 lg:p-14 bg-slate-50">
         <div className="w-full max-w-lg animate-slide-up">
 
           {/* Mobile logo */}
@@ -77,7 +77,7 @@ export default function LoginPage() {
             <span className="font-bold text-slate-900 text-xl">AutoPost AI</span>
           </div>
 
-          <div className="card p-10">
+          <div className="card p-6 sm:p-10">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-slate-900 mb-3">Welcome back 👋</h2>
               <p className="text-slate-500 text-lg leading-relaxed">

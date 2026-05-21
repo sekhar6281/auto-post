@@ -37,7 +37,7 @@ export default async function DashboardPage() {
     <div className="animate-fade-in">
 
       {/* ── Hero banner ─────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl gradient-brand p-10 mb-10 shadow-brand">
+      <div className="relative overflow-hidden rounded-2xl gradient-brand p-6 sm:p-10 mb-6 sm:mb-10 shadow-brand">
         <div className="absolute inset-0 bg-grid-white opacity-100" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
@@ -57,9 +57,9 @@ export default async function DashboardPage() {
 
           <Link
             href="/upload"
-            className="inline-flex items-center gap-2 bg-white text-linkedin-600 font-semibold
-                       px-7 py-4 rounded-xl shadow-sm hover:shadow-md
-                       hover:bg-blue-50 active:scale-95 transition-all shrink-0 text-xl"
+            className="inline-flex items-center justify-center gap-2 bg-white text-linkedin-600 font-semibold
+                       px-5 py-3 sm:px-7 sm:py-4 rounded-xl shadow-sm hover:shadow-md
+                       hover:bg-blue-50 active:scale-95 transition-all shrink-0 text-base sm:text-xl w-full sm:w-auto"
           >
             Start new post
             <ArrowRight className="w-5 h-5" />
@@ -77,7 +77,7 @@ export default async function DashboardPage() {
             <Link
               key={step}
               href={href}
-              className="card-hover group p-8 cursor-pointer"
+              className="card-hover group p-5 sm:p-8 cursor-pointer"
             >
               <div className={`inline-flex p-4 rounded-xl ${bg} ring-1 ${ring} mb-5`}>
                 <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center shadow-sm`}>

@@ -122,14 +122,14 @@ export default function PreviewPage() {
 
   /* ── Success screen ───────────────────────────────────── */
   if (status === "success") return (
-    <div className="animate-scale-in max-w-lg mx-auto text-center py-12">
+    <div className="animate-scale-in max-w-lg mx-auto text-center py-6 sm:py-12">
 
       {/* Big check */}
       <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm">
         <CheckCircle2 className="w-12 h-12 text-emerald-500" />
       </div>
 
-      <h1 className="text-3xl font-bold text-slate-900 mb-3">
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">
         You&apos;re live on LinkedIn! 🎉
       </h1>
       <p className="text-slate-500 text-lg mb-6">

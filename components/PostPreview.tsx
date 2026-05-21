@@ -40,26 +40,26 @@ function MediaGrid({ items }: { items: MediaItem[] }) {
 
   // 2 — side by side
   if (items.length === 2) return (
-    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100" style={{ height: 280 }}>
+    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100 h-[180px] sm:h-[280px]">
       {items.map((it, i) => <Img key={i} url={it.url} type={it.type} />)}
     </div>
   );
 
   // 3 — tall left + 2 stacked right
   if (items.length === 3) return (
-    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100" style={{ height: 300 }}>
+    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100 h-[200px] sm:h-[300px]">
       <div className="row-span-2"><Img url={items[0].url} type={items[0].type} /></div>
       {items.slice(1).map((it, i) => (
-        <div key={i} style={{ height: 150 }}><Img url={it.url} type={it.type} /></div>
+        <div key={i} className="h-[100px] sm:h-[150px]"><Img url={it.url} type={it.type} /></div>
       ))}
     </div>
   );
 
   // 4+ — big left + 3 stacked right (with +N overlay on last)
   return (
-    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100" style={{ height: 320 }}>
-      <div style={{ height: 320 }}><Img url={visible[0].url} type={visible[0].type} /></div>
-      <div className="grid grid-rows-3 gap-0.5" style={{ height: 320 }}>
+    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100 h-[200px] sm:h-[320px]">
+      <div className="h-[200px] sm:h-[320px]"><Img url={visible[0].url} type={visible[0].type} /></div>
+      <div className="grid grid-rows-3 gap-0.5 h-[200px] sm:h-[320px]">
         {visible.slice(1).map((it, i) => (
           <Img
             key={i}

@@ -178,7 +178,7 @@ export function MediaUploader({ onUploadComplete }: Props) {
           onDrop={e => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
           onClick={() => inputRef.current?.click()}
           className={cn(
-            "relative rounded-2xl border-2 border-dashed p-16 text-center cursor-pointer transition-all duration-300 overflow-hidden",
+            "relative rounded-2xl border-2 border-dashed p-8 sm:p-16 text-center cursor-pointer transition-all duration-300 overflow-hidden",
             drag
               ? "border-linkedin-500 bg-linkedin-50 scale-[1.01] shadow-brand"
               : "border-slate-200 bg-white hover:border-linkedin-400 hover:bg-linkedin-50/50 shadow-sm"
@@ -187,8 +187,8 @@ export function MediaUploader({ onUploadComplete }: Props) {
           <div className={cn("transition-all duration-300", drag && "scale-110")}>
             <div className="flex justify-center mb-6">
               <div className="relative">
-                <div className="w-20 h-20 gradient-brand rounded-2xl flex items-center justify-center shadow-brand">
-                  <CloudUpload className="w-10 h-10 text-white" />
+                <div className="w-14 h-14 sm:w-20 sm:h-20 gradient-brand rounded-2xl flex items-center justify-center shadow-brand">
+                  <CloudUpload className="w-7 h-7 sm:w-10 sm:h-10 text-white" />
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center shadow-sm">
                   <Film className="w-4 h-4 text-white" />
@@ -196,10 +196,10 @@ export function MediaUploader({ onUploadComplete }: Props) {
               </div>
             </div>
 
-            <p className="font-bold text-slate-800 text-2xl mb-2">
+            <p className="font-bold text-slate-800 text-xl sm:text-2xl mb-2">
               {drag ? "Drop to upload!" : "Drag & drop your media"}
             </p>
-            <p className="text-lg text-slate-500 mb-8">
+            <p className="text-base sm:text-lg text-slate-500 mb-6 sm:mb-8">
               Up to 9 images or 1 video · JPG PNG GIF WebP MP4 MOV
             </p>
 

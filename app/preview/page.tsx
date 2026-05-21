@@ -25,15 +25,18 @@ function clearAllBrowserData() {
 export default function PreviewPage() {
   const router            = useRouter();
   const { data: session } = useSession();
-  const [mediaList, setML]  = useState<CloudinaryResource[]>([]);
+  const [mediaList, setML]    = useState<CloudinaryResource[]>([]);
   const [caption,   setCaption] = useState("");
   const [status,    setStatus]  = useState<Status>("idle");
   const [postUrl,   setPostUrl] = useState("");
   const [errorMsg,  setError]   = useState("");
   const [countdown, setCountdown] = useState(15);
 
-  // Stable ref so createNewPost can cancel the interval started inside post()
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Interval ref for the countdown timer
+  const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Set to true the moment the user clicks "Create another post" — prevents
+  // the countdown's last tick from calling signOut after navigation begins
+  const cancelledRef   = useRef(false);
 
   useEffect(() => {
     const rm = sessionStorage.getItem("uploadedMedia");
@@ -42,12 +45,16 @@ export default function PreviewPage() {
     setML(JSON.parse(rm)); setCaption(rc);
   }, [router]);
 
-  // Cleanup interval if the component unmounts for any reason
-  useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
+  // Always clear the interval when this page unmounts (navigation away)
+  useEffect(() => () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  }, []);
 
   const post = async () => {
     if (!mediaList.length || !caption) return;
     setStatus("posting"); setError("");
+    cancelledRef.current = false;
+
     const isVideo   = mediaList[0].resource_type === "video";
     const mediaType = isVideo ? "video" : "image";
     try {
@@ -67,17 +74,23 @@ export default function PreviewPage() {
       sessionStorage.removeItem("uploadedMedia");
       sessionStorage.removeItem("generatedCaption");
 
-      // Always start a 15-second auto sign-out countdown.
-      // Clicking "Create another post" cancels it.
+      // Start 15-second auto sign-out countdown.
+      // Clicking "Create another post" sets cancelledRef = true and clears
+      // the interval, so the signOut below is never reached.
       let secs = 15;
       setCountdown(secs);
       intervalRef.current = setInterval(() => {
+        // If the user already clicked "Create another post", stop immediately
+        if (cancelledRef.current) {
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          return;
+        }
         secs -= 1;
         setCountdown(secs);
         if (secs <= 0) {
           clearInterval(intervalRef.current!);
           intervalRef.current = null;
-          // Wipe ALL browser-side data: tokens, emails, session info, SW caches
           clearAllBrowserData();
           signOut({ callbackUrl: "/login" });
         }
@@ -90,10 +103,11 @@ export default function PreviewPage() {
   };
 
   const createNewPost = () => {
-    // Cancel the auto sign-out timer then restart from Step 1
+    // Mark as cancelled FIRST — stops any in-flight interval tick from calling signOut
+    cancelledRef.current = true;
+    // Then clear the interval
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    // Only clear post data — do NOT clear sessionActive or SessionGuard
-    // will think the tab was reopened and sign the user out immediately
+    // Only remove the post-related keys — leave everything else intact
     sessionStorage.removeItem("uploadedMedia");
     sessionStorage.removeItem("generatedCaption");
     router.push("/upload");
@@ -154,11 +168,10 @@ export default function PreviewPage() {
         </button>
       </div>
 
-      {/* Auto sign-out countdown — always shown */}
+      {/* Auto sign-out countdown */}
       <div className="bg-amber-50 border border-amber-100 rounded-2xl px-6 py-6">
         <LogOut className="w-7 h-7 text-amber-500 mx-auto mb-3" />
 
-        {/* Big countdown number */}
         <div className="flex items-baseline justify-center gap-2 mb-2">
           <span className="text-5xl font-bold tabular-nums text-amber-600 leading-none">
             {countdown}

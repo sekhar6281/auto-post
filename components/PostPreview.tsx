@@ -1,14 +1,31 @@
 "use client";
 
+import React from "react";
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal } from "lucide-react";
 import Image from "next/image";
 
 interface MediaItem { url: string; type: "image" | "video" }
 interface Props { userName: string; userImage?: string; caption: string; mediaItems?: MediaItem[] }
 
+function Img({ url, type, overlay }: { url: string; type: "image" | "video"; overlay?: React.ReactNode }) {
+  return (
+    <div className="relative w-full h-full overflow-hidden bg-slate-100">
+      {type === "video"
+        ? <video src={url} muted className="w-full h-full object-cover" />
+        // eslint-disable-next-line @next/next/no-img-element
+        : <img src={url} alt="" className="w-full h-full object-cover" />}
+      {overlay}
+    </div>
+  );
+}
+
 function MediaGrid({ items }: { items: MediaItem[] }) {
   if (!items.length) return null;
 
+  const more = Math.max(0, items.length - 4);
+  const visible = items.slice(0, 4);
+
+  // 1 — full width
   if (items.length === 1) {
     const { url, type } = items[0];
     return (
@@ -20,44 +37,42 @@ function MediaGrid({ items }: { items: MediaItem[] }) {
       </div>
     );
   }
+
+  // 2 — side by side
   if (items.length === 2) return (
-    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100">
-      {items.map((it, i) => (
-        <div key={i} className="aspect-square overflow-hidden bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={it.url} alt="" className="w-full h-full object-cover" />
-        </div>
-      ))}
+    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100" style={{ height: 280 }}>
+      {items.map((it, i) => <Img key={i} url={it.url} type={it.type} />)}
     </div>
   );
+
+  // 3 — tall left + 2 stacked right
   if (items.length === 3) return (
-    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100" style={{ gridTemplateRows: "1fr 1fr" }}>
-      <div className="row-span-2 overflow-hidden bg-slate-100">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={items[0].url} alt="" className="w-full h-full object-cover" style={{ minHeight: 200 }} />
-      </div>
+    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100" style={{ height: 300 }}>
+      <div className="row-span-2"><Img url={items[0].url} type={items[0].type} /></div>
       {items.slice(1).map((it, i) => (
-        <div key={i} className="aspect-square overflow-hidden bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={it.url} alt="" className="w-full h-full object-cover" />
-        </div>
+        <div key={i} style={{ height: 150 }}><Img url={it.url} type={it.type} /></div>
       ))}
     </div>
   );
-  const visible = items.slice(0, 4); const more = items.length - 4;
+
+  // 4+ — big left + 3 stacked right (with +N overlay on last)
   return (
-    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100">
-      {visible.map((it, i) => (
-        <div key={i} className="relative aspect-square overflow-hidden bg-slate-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={it.url} alt="" className="w-full h-full object-cover" />
-          {i === 3 && more > 0 && (
-            <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-              <span className="text-white text-3xl font-bold">+{more}</span>
-            </div>
-          )}
-        </div>
-      ))}
+    <div className="grid grid-cols-2 gap-0.5 border-y border-slate-100" style={{ height: 320 }}>
+      <div style={{ height: 320 }}><Img url={visible[0].url} type={visible[0].type} /></div>
+      <div className="grid grid-rows-3 gap-0.5" style={{ height: 320 }}>
+        {visible.slice(1).map((it, i) => (
+          <Img
+            key={i}
+            url={it.url}
+            type={it.type}
+            overlay={i === 2 && more > 0
+              ? <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                  <span className="text-white text-3xl font-bold">+{more}</span>
+                </div>
+              : undefined}
+          />
+        ))}
+      </div>
     </div>
   );
 }

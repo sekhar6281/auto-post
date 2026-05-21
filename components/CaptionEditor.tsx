@@ -1,79 +1,155 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, RefreshCw, Copy, CheckCheck, Loader2, Zap, Hash, AlignLeft } from "lucide-react";
+import {
+  Sparkles, RefreshCw, Copy, CheckCheck, Loader2,
+  Zap, Hash, AlignLeft, Link2, CheckCircle2, AlertCircle, StickyNote,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import type { Tone, StructuredCaption } from "@/lib/groq";
 
 const TONES: { value: Tone; label: string; emoji: string; desc: string }[] = [
-  { value: "professional",    label: "Professional",    emoji: "💼", desc: "Executive voice"    },
-  { value: "startup-founder", label: "Startup Founder", emoji: "🚀", desc: "Authentic builder"  },
-  { value: "technical",       label: "Technical",       emoji: "⚙️", desc: "Dev-focused"        },
-  { value: "motivational",    label: "Motivational",    emoji: "🔥", desc: "High energy"        },
+  { value: "professional",    label: "Professional",    emoji: "💼", desc: "Executive voice"   },
+  { value: "startup-founder", label: "Startup Founder", emoji: "🚀", desc: "Authentic builder" },
+  { value: "technical",       label: "Technical",       emoji: "⚙️", desc: "Dev-focused"       },
+  { value: "motivational",    label: "Motivational",    emoji: "🔥", desc: "High energy"       },
 ];
 
 interface Props {
-  mediaUrl: string; mediaType: "image" | "video";
+  mediaUrl: string;
+  mediaType: "image" | "video";
   onCaptionReady: (caption: string) => void;
 }
 
 export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
-  const [context, setContext] = useState("");
-  const [tone, setTone]       = useState<Tone>("professional");
-  const [result, setResult]   = useState<StructuredCaption | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-  const [copiedKey, setCK]    = useState<string | null>(null);
-  const [hook, setHook]       = useState("");
-  const [body, setBody]       = useState("");
-  const [tags, setTags]       = useState<string[]>([]);
-  const [newTag, setNewTag]   = useState("");
+  const [summitUrl, setSummitUrl] = useState("");
+  const [context,   setContext]   = useState("");
+  const [tone,      setTone]      = useState<Tone>("professional");
+  const [result,    setResult]    = useState<StructuredCaption | null>(null);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+  const [urlOk,     setUrlOk]     = useState<boolean | null>(null);
+  const [copiedKey, setCK]        = useState<string | null>(null);
+  const [hook, setHook]           = useState("");
+  const [body, setBody]           = useState("");
+  const [tags, setTags]           = useState<string[]>([]);
+  const [newTag, setNewTag]       = useState("");
 
   const full = (h: string, b: string, t: string[]) => `${h}\n\n${b}\n\n${t.join(" ")}`;
 
+  const isValidUrl = (v: string) => {
+    try { new URL(v); return true; } catch { return false; }
+  };
+
   const generate = async () => {
-    if (!context.trim()) { setError("Please add context first."); return; }
-    setError(null); setLoading(true);
+    if (!summitUrl && !context.trim()) {
+      setError("Please enter a summit URL or a short description.");
+      return;
+    }
+    if (summitUrl && !isValidUrl(summitUrl)) {
+      setError("Please enter a valid URL (e.g. https://example.com).");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    setUrlOk(null);
     try {
-      const res  = await fetch("/api/caption", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ context, tone, mediaType, mediaUrl }) });
+      const res  = await fetch("/api/caption", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ summitUrl: summitUrl || undefined, context, tone, mediaType, mediaUrl }),
+      });
       const data = await res.json() as StructuredCaption & { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Failed");
-      setResult(data); setHook(data.hook); setBody(data.body); setTags(data.hashtags);
+      setUrlOk(!!summitUrl);
+      setResult(data);
+      setHook(data.hook);
+      setBody(data.body);
+      setTags(data.hashtags);
       onCaptionReady(full(data.hook, data.body, data.hashtags));
       toast.success("Caption generated!");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error"; setError(msg); toast.error(msg);
-    } finally { setLoading(false); }
+      const msg = err instanceof Error ? err.message : "Error";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onChange = (h: string, b: string, t: string[]) => onCaptionReady(full(h, b, t));
-  const copy = async (text: string, key: string) => { await navigator.clipboard.writeText(text); setCK(key); toast.success("Copied!"); setTimeout(() => setCK(null), 2000); };
-  const addTag = () => { if (!newTag.trim()) return; const f = newTag.startsWith("#") ? newTag.trim() : `#${newTag.trim()}`; if (tags.includes(f)) return; const u = [...tags, f]; setTags(u); setNewTag(""); onChange(hook, body, u); };
+  const onChange  = (h: string, b: string, t: string[]) => onCaptionReady(full(h, b, t));
+  const copy      = async (text: string, key: string) => {
+    await navigator.clipboard.writeText(text);
+    setCK(key);
+    toast.success("Copied!");
+    setTimeout(() => setCK(null), 2000);
+  };
+  const addTag    = () => {
+    if (!newTag.trim()) return;
+    const f = newTag.startsWith("#") ? newTag.trim() : `#${newTag.trim()}`;
+    if (tags.includes(f)) return;
+    const u = [...tags, f]; setTags(u); setNewTag(""); onChange(hook, body, u);
+  };
   const removeTag = (t: string) => { const u = tags.filter(x => x !== t); setTags(u); onChange(hook, body, u); };
-  const chars = full(hook, body, tags).length;
+  const chars     = full(hook, body, tags).length;
 
   return (
     <div className="space-y-6">
 
-      {/* Context */}
+      {/* ── Summit / Event URL ─────────────────────────── */}
+      <div>
+        <label className="block text-lg font-semibold text-slate-700 mb-2.5">
+          Official Summit / Event URL
+          <span className="ml-2 text-sm font-normal text-slate-400">(paste the event website link)</span>
+        </label>
+        <div className="relative">
+          <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+          <input
+            value={summitUrl}
+            onChange={e => { setSummitUrl(e.target.value); setUrlOk(null); }}
+            placeholder="https://summitname.com  or  https://lu.ma/event/..."
+            className={cn(
+              "input-base pl-12 pr-12",
+              summitUrl && !isValidUrl(summitUrl) && "border-red-300 focus:border-red-400 focus:ring-red-200"
+            )}
+          />
+          {summitUrl && isValidUrl(summitUrl) && urlOk === null && (
+            <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+          )}
+          {urlOk === true && (
+            <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+          )}
+        </div>
+        {summitUrl && isValidUrl(summitUrl) && (
+          <p className="mt-1.5 text-sm text-slate-400 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            Website will be read automatically when you generate the caption
+          </p>
+        )}
+      </div>
+
+      {/* ── Additional context (optional) ───────────────── */}
       <div>
         <div className="flex items-center justify-between mb-2.5">
-          <label className="text-lg font-semibold text-slate-700">
-            What&apos;s this post about? <span className="text-red-400">*</span>
+          <label className="text-lg font-semibold text-slate-700 flex items-center gap-2">
+            <StickyNote className="w-4 h-4 text-slate-400" />
+            Additional notes
+            <span className="text-sm font-normal text-slate-400">(optional)</span>
           </label>
           <span className="text-base text-slate-400 tabular-nums">{context.length}/300</span>
         </div>
         <input
-          value={context} onChange={e => setContext(e.target.value)}
+          value={context}
+          onChange={e => setContext(e.target.value)}
           onKeyDown={e => e.key === "Enter" && generate()}
-          placeholder="e.g. just shipped v2 of my SaaS after 3 months of building…"
+          placeholder="e.g. met 3 speakers, loved the AI panel, first time attending…"
           maxLength={300}
           className="input-base"
         />
       </div>
 
-      {/* Tone */}
+      {/* ── Tone ─────────────────────────────────────────── */}
       <div>
         <label className="block text-lg font-semibold text-slate-700 mb-3">Tone</label>
         <div className="grid grid-cols-2 gap-3">
@@ -96,27 +172,47 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
         </div>
       </div>
 
-      {/* Generate */}
-      <button onClick={generate} disabled={loading || !context.trim()}
+      {/* ── Generate button ───────────────────────────────── */}
+      <button
+        onClick={generate}
+        disabled={loading || (!summitUrl && !context.trim())}
         className={cn("w-full btn-primary py-4",
-          (loading || !context.trim()) && "opacity-50 cursor-not-allowed shadow-none"
+          (loading || (!summitUrl && !context.trim())) && "opacity-50 cursor-not-allowed shadow-none"
         )}
       >
-        {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Generating with Groq…</>
-          : result ? <><RefreshCw className="w-5 h-5" />Regenerate Caption</>
+        {loading
+          ? <><Loader2 className="w-5 h-5 animate-spin" />{summitUrl ? "Reading website & generating…" : "Generating with Groq…"}</>
+          : result
+          ? <><RefreshCw className="w-5 h-5" />Regenerate Caption</>
           : <><Sparkles className="w-5 h-5" />Generate Caption</>}
       </button>
 
+      {/* ── URL fetch notice ──────────────────────────────── */}
+      {loading && summitUrl && (
+        <div className="flex items-center gap-3 text-base text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-5 py-3 animate-fade-in">
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          Fetching summit info from the website, this may take a few seconds…
+        </div>
+      )}
+
+      {/* ── Error ────────────────────────────────────────── */}
       {error && (
         <div className="flex items-center gap-3 text-lg text-red-600 bg-red-50 border border-red-100 rounded-xl px-5 py-4">
-          <span className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold shrink-0">!</span>
+          <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
           {error}
         </div>
       )}
 
-      {/* Output sections */}
+      {/* ── Output sections ──────────────────────────────── */}
       {result && (
         <div className="space-y-4 animate-slide-up">
+
+          {urlOk && (
+            <div className="flex items-center gap-2 text-base text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-3">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              Caption generated using real summit info from the website
+            </div>
+          )}
 
           {/* Hook */}
           <div className="card overflow-hidden">
@@ -128,8 +224,12 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
                 {copiedKey === "hook" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
               </button>
             </div>
-            <textarea value={hook} onChange={e => { setHook(e.target.value); onChange(e.target.value, body, tags); }} rows={2}
-              className="w-full px-5 py-4 text-lg font-semibold text-slate-800 leading-relaxed focus:outline-none resize-none bg-white" />
+            <textarea
+              value={hook}
+              onChange={e => { setHook(e.target.value); onChange(e.target.value, body, tags); }}
+              rows={2}
+              className="w-full px-5 py-4 text-lg font-semibold text-slate-800 leading-relaxed focus:outline-none resize-none bg-white"
+            />
           </div>
 
           {/* Body */}
@@ -142,8 +242,12 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
                 {copiedKey === "body" ? <CheckCheck className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
               </button>
             </div>
-            <textarea value={body} onChange={e => { setBody(e.target.value); onChange(hook, e.target.value, tags); }} rows={8}
-              className="w-full px-5 py-4 text-lg text-slate-800 leading-relaxed focus:outline-none resize-none bg-white" />
+            <textarea
+              value={body}
+              onChange={e => { setBody(e.target.value); onChange(hook, e.target.value, tags); }}
+              rows={8}
+              className="w-full px-5 py-4 text-lg text-slate-800 leading-relaxed focus:outline-none resize-none bg-white"
+            />
           </div>
 
           {/* Hashtags */}
@@ -166,8 +270,13 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
                 ))}
               </div>
               <div className="flex gap-3">
-                <input value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === "Enter" && addTag()}
-                  placeholder="Add hashtag…" className="flex-1 text-base px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white" />
+                <input
+                  value={newTag}
+                  onChange={e => setNewTag(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addTag()}
+                  placeholder="Add hashtag…"
+                  className="flex-1 text-base px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-400 bg-white"
+                />
                 <button onClick={addTag} className="text-base px-4 py-2.5 bg-violet-100 hover:bg-violet-200 text-violet-700 font-semibold rounded-lg transition-colors">Add</button>
               </div>
             </div>
@@ -180,11 +289,16 @@ export function CaptionEditor({ mediaUrl, mediaType, onCaptionReady }: Props) {
                 ? <span className="text-red-500">Too long ({chars}/3000)</span>
                 : <span className="text-emerald-600">✓ {chars}/3000 — ready to post</span>}
             </p>
-            <button onClick={() => copy(full(hook, body, tags), "full")}
-              className="flex items-center gap-2 text-base font-medium text-slate-500 hover:text-linkedin-500 transition-colors">
-              {copiedKey === "full" ? <><CheckCheck className="w-4 h-4 text-emerald-500" />Copied!</> : <><Copy className="w-4 h-4" />Copy full caption</>}
+            <button
+              onClick={() => copy(full(hook, body, tags), "full")}
+              className="flex items-center gap-2 text-base font-medium text-slate-500 hover:text-linkedin-500 transition-colors"
+            >
+              {copiedKey === "full"
+                ? <><CheckCheck className="w-4 h-4 text-emerald-500" />Copied!</>
+                : <><Copy className="w-4 h-4" />Copy full caption</>}
             </button>
           </div>
+
         </div>
       )}
     </div>

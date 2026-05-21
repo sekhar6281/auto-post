@@ -5,10 +5,11 @@ export type Tone =
   | "motivational";
 
 export interface CaptionRequest {
-  context: string;
+  context?: string;
   tone: Tone;
   mediaType: "image" | "video";
   mediaUrl?: string;
+  summitContext?: string;
 }
 
 export interface StructuredCaption {
@@ -65,13 +66,27 @@ JSON format:
 
 // ── Build user prompt ────────────────────────────────────────
 function buildUserPrompt(req: CaptionRequest): string {
-  return `Generate a LinkedIn caption.
+  const parts: string[] = ["Generate a LinkedIn caption."];
 
-Context: ${req.context}
-Tone style: ${TONE_GUIDES[req.tone]}
-Media type: ${req.mediaType === "video" ? "Video post" : "Image post"}
+  if (req.summitContext) {
+    parts.push(`\nOFFICIAL EVENT WEBSITE CONTENT:\n${req.summitContext}`);
+    parts.push(`\nUsing the above event content you MUST:
+- Use the exact event/summit name
+- Mention keynote speakers or panelists by name if listed
+- Mention the organizer or host organization if listed
+- Reference key topics or themes from the event
+- Write from first-person perspective of an attendee`);
+  }
 
-Return only the JSON object.`;
+  if (req.context) {
+    parts.push(`\nAdditional context from attendee: ${req.context}`);
+  }
+
+  parts.push(`\nTone style: ${TONE_GUIDES[req.tone]}`);
+  parts.push(`Media type: ${req.mediaType === "video" ? "Video post" : "Image post"}`);
+  parts.push(`\nReturn only the JSON object.`);
+
+  return parts.join("\n");
 }
 
 // ── Main export ──────────────────────────────────────────────
